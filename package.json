@@ -1,0 +1,21 @@
+{
+  "name": "reporter-web",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "firebase-admin": "^13.5.0",
+    "multer": "^2.0.2",
+    "nanoid": "^3.3.11",
+    "sharp": "^0.34.4"
+  }
+}

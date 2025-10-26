@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Citizen Reporter</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- 1. Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- 2. jQuery (required by Select2) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <!-- 3. Select2 files -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <!-- 4. Our New Custom Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body class="bg-dark-gradient">
+
+    <!-- =========== NAVBAR =========== -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="/">Citizen Reporter</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" id="nav-link-report">Submit Report</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">View All Reports</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="nav-link-status">Check Status</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- =========== MAIN CONTENT =========== -->
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-7">
+
+                <!-- =========== REPORT VIEW (Visible by default) =========== -->
+                <div id="report-view">
+                    <div class="card card-dark-bg shadow-sm my-5">
+                        <div class="card-body p-4 p-md-5">
+                            <h2 class="card-title text-center mb-4">Report a Problem</h2>
+                            <form action="/submit-report" method="POST">
+                                <!-- Location -->
+                                <div class="mb-3">
+                                    <label for="location" class="form-label">Location (Optional)</label>
+                                    <input type="text" class="form-control form-control-dark" id="location" name="location" placeholder="e.g., 'Corner of Main St. and 2nd Ave.'">
+                                </div>
+                                <!-- Description -->
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Description of Problem</label>
+                                    <textarea class="form-control form-control-dark" id="description" name="description" rows="4" placeholder="Describe the issue in detail..." required></textarea>
+                                </div>
+                                <!-- Type of Problem -->
+                                <div class="mb-3">
+                                    <label for="problem-type" class="form-label">Type of Problem</label>
+                                    <select id="problem-type" name="problem_type" class="js-searchable form-control-dark" required>
+                                        <option value="">Select a problem type...</option>
+                                        <option value="pothole">Pothole</option>
+                                        <option value="broken_streetlight">Broken Streetlight</option>
+                                        <option value="graffiti">Graffiti</option>
+                                        <option value="trash_overflow">Trash Overflow</option>
+                                        <option value="fallen_tree">Fallen Tree</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <!-- Government Institution -->
+                                <div class="mb-3">
+                                    <label for="institution" class="form-label">Responsible Institution</label>
+                                    <select id="institution" name="institution" class="js-searchable form-control-dark" required>
+                                        <option value="">Select an institution...</option>
+                                        <option value="public_works">Department of Public Works</option>
+                                        <option value="parks_rec">Parks and Recreation</option>
+                                        <option value="transportation">Department of Transportation</option>
+                                        <option value="sanitation">Sanitation Department</option>
+                                    </select>
+                                </div>
+                                <!-- Submit Button -->
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary btn-lg">Submit Report</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- =========== STATUS VIEW (Hidden by default) =========== -->
+                <div id="status-view" style="display: none;">
+                    <div class="card card-dark-bg shadow-sm my-5">
+                        <div class="card-body p-4 p-md-5">
+                            <h2 class="card-title text-center mb-4">Check Your Report Status</h2>
+                            <p class="text-center text-muted mb-4">Enter the 8-digit tracking code you received.</p>
+                            
+                            <form id="status-form">
+                                <div class="mb-3">
+                                    <label for="code" class="form-label visually-hidden">Tracking Code</label>
+                                    <input type="text" class="form-control form-control-dark form-control-lg text-center" id="code" name="code" placeholder="ENTER YOUR CODE" required maxlength="8" style="font-weight: bold; letter-spacing: 2px;">
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-success btn-lg">Check Status</button>
+                                </div>
+                            </form>
+                            
+                            <!-- Results will be injected here -->
+                            <div id="status-results" class="mt-4"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- =========== OUR APP JAVASCRIPT =========== -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- Get all our important elements ---
+            const reportView = document.getElementById('report-view');
+            const statusView = document.getElementById('status-view');
+            const navLinkReport = document.getElementById('nav-link-report');
+            const navLinkStatus = document.getElementById('nav-link-status');
+            
+            const statusForm = document.getElementById('status-form');
+            const codeInput = document.getElementById('code');
+            const statusResults = document.getElementById('status-results');
+
+            // --- Initialize Select2 Dropdowns ---
+            function initSelect2(context) {
+                $(context).find('.js-searchable').select2({
+                    dropdownParent: $(context).find('.card-body')
+                });
+            }
+
+            // --- Navigation Logic ---
+            navLinkReport.addEventListener('click', (e) => {
+                e.preventDefault();
+                showReportView();
+            });
+
+            navLinkStatus.addEventListener('click', (e) => {
+                e.preventDefault();
+                showStatusView();
+            });
+
+            function showReportView() {
+                statusView.style.display = 'none';
+                reportView.style.display = 'block';
+                navLinkStatus.classList.remove('active');
+                navLinkReport.classList.add('active');
+                initSelect2(reportView); // Init Select2 for this view
+            }
+
+            function showStatusView() {
+                reportView.style.display = 'none';
+                statusView.style.display = 'block';
+                navLinkReport.classList.remove('active');
+                navLinkStatus.classList.add('active');
+            }
+
+            // --- Status Form Submit Logic ---
+            statusForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const code = codeInput.value.toUpperCase();
+                if (code) {
+                    fetchStatus(code);
+                }
+            });
+
+            // --- Event delegation for "Mark as Completed" button ---
+            statusResults.addEventListener('click', (e) => {
+                if (e.target && e.target.id === 'mark-completed-btn') {
+                    const code = e.target.dataset.code;
+                    markAsCompleted(code, e.target);
+                }
+            });
+
+            async function fetchStatus(code) {
+                statusResults.innerHTML = `<p class="text-center text-light">Loading...</p>`;
+                
+                try {
+                    const response = await fetch(`/check-status?code=${code}`);
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        const report = result.report;
+
+                        const isCompleted = report.status === 'Completed';
+                        const statusBadge = isCompleted 
+                            ? `<span class="badge bg-success-subtle text-success-emphasis rounded-pill">Completed</span>`
+                            : `<span class="badge bg-primary-subtle text-primary-emphasis rounded-pill">${report.status}</span>`;
+                            
+                        const completeButtonHtml = isCompleted
+                            ? ''
+                            : `<div class="d-grid mt-3">
+                                   <button class="btn btn-warning" id="mark-completed-btn" data-code="${report.id}">Mark as Completed</button>
+                               </div>`;
+
+                        statusResults.innerHTML = `
+                            <div class="alert alert-dark mt-4">
+                                <h4 class="alert-heading">Report Found! (ID: ${report.id})</h4>
+                                <ul class="list-group list-group-flush list-group-dark">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <strong>Status:</strong> 
+                                        ${statusBadge}
+                                    </li>
+                                    <li class="list-group-item"><strong>Submitted:</strong> ${report.timestamp}</li>
+                                    <li class="list-group-item"><strong>Problem:</strong> ${report.problemType}</li>
+                                    <li class="list-group-item"><strong>Description:</strong> ${report.description}</li>
+                                    ${report.location ? `<li class="list-group-item"><strong>Location:</strong> ${report.location}</li>` : ''}
+                                </ul>
+                                ${completeButtonHtml}
+                            </div>
+                        `;
+                    } else {
+                        statusResults.innerHTML = `
+                            <div class="alert alert-danger mt-4">
+                                <strong>No report found with code: ${code}</strong>
+                                <p class="mb-0">Please check your code and try again.</p>
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Error fetching status:', error);
+                    statusResults.innerHTML = `<div class="alert alert-danger mt-4">An error occurred. Please try again.</div>`;
+                }
+            }
+
+            async function markAsCompleted(code, buttonElement) {
+                buttonElement.disabled = true;
+                buttonElement.textContent = 'Updating...';
+
+                try {
+                    const response = await fetch('/mark-completed', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code: code })
+                    });
+                    
+                    if (response.ok) {
+                        const statusBadge = buttonElement.closest('.alert').querySelector('.badge');
+                        if (statusBadge) {
+                            statusBadge.textContent = 'Completed';
+                            statusBadge.classList.remove('bg-primary-subtle', 'text-primary-emphasis');
+                            statusBadge.classList.add('bg-success-subtle', 'text-success-emphasis');
+                        }
+                        buttonElement.closest('.d-grid').remove();
+                    } else {
+                        buttonElement.disabled = false;
+                        buttonElement.textContent = 'Mark as Completed';
+                        statusResults.innerHTML += `<div class="alert alert-danger mt-2">Failed to update. Please try again.</div>`;
+                    }
+                } catch (error) {
+                    console.error('Error marking as completed:', error);
+                    buttonElement.disabled = false;
+                    buttonElement.textContent = 'Mark as Completed';
+                    statusResults.innerHTML += `<div class="alert alert-danger mt-2">An error occurred. Please try again.</div>`;
+                }
+            }
+            
+            // --- Check URL on Page Load ---
+            const params = new URLSearchParams(window.location.search);
+            const urlCode = params.get('code');
+
+            if (urlCode) {
+                showStatusView();
+                codeInput.value = urlCode;
+                fetchStatus(urlCode);
+            } else {
+                showReportView(); // Show report view by default
+            }
+        });
+    </script>
+</body>
+</html>
+

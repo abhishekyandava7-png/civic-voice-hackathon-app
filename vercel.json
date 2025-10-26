@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "public/style.css",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "*.html",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    { "src": "/style.css", "dest": "/public/style.css" },
+    { "src": "/dashboard", "dest": "/dashboard.html" },
+    
+    { "src": "/submit-report", "dest": "/server.js" },
+    { "src": "/check-status", "dest": "/server.js" },
+    { "src": "/mark-completed", "dest": "/server.js" },
+    { "src": "/vote/(.*)", "dest": "/server.js" },
+    { "src": "/get-all-reports", "dest": "/server.js" },
+    
+    { "src": "/", "dest": "/app.html" }
+  ]
+}
+

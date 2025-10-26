@@ -1,0 +1,15 @@
+Node modules
+
+node_modules
+
+Secret keys
+
+serviceAccountKey.json
+
+Vercel deployment files
+
+.vercel
+
+Uploaded files
+
+uploads/
