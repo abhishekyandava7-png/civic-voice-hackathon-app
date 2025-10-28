@@ -69,35 +69,34 @@ app.post('/submit-report', async (req, res) => {
 // 2. Handle the status check (sends JSON data)
 app.get('/check-status', async (req, res) => {
     if (!db) return res.status(500).json({ success: false, message: 'Database not connected.' });
-    
+
     try {
-        const { code } = req.query; // Query parameter from URL
+        const { code } = req.query;
         if (!code) {
             return res.status(400).json({ success: false, message: 'No code provided.' });
         }
-        
-        const keyHash = crypto.createHash('sha256').update(code).digest('hex');
-        const reportsRef = db.collection('reports');
-        const snapshot = await reportsRef.where('key_hash', '==', keyHash).limit(1).get();
 
-        if (snapshot.empty) {
-            return res.status(404).json({ success: false, message: 'No report found with this key.' });
+        const doc = await db.collection('reports').doc(code.toUpperCase()).get();
+
+        if (doc.exists) {
+            const report = doc.data();
+            // Convert Firestore timestamp to a readable string for JSON
+            const submittedDate = report.timestamp ? report.timestamp.toDate().toLocaleString() : 'N/A';
+            
+            // Send a JSON response
+            res.json({ 
+                success: true, 
+                report: { ...report, timestamp: submittedDate } 
+            });
+        } else {
+            // Send a 404 Not Found error
+            res.status(404).json({ success: false, message: 'No report found.' });
         }
-
-        const report = snapshot.docs[0].data();
-        const submittedDate = report.createdAt ? report.createdAt.toDate().toLocaleString() : 'N/A';
-
-        res.json({ 
-            success: true, 
-            report: { ...report, timestamp: submittedDate } 
-        });
-
     } catch (error) {
          console.error("Error checking status:", error);
          res.status(500).json({ success: false, message: 'An error occurred.' });
     }
 });
-
 
 // 3. Handle Mark as Completed
 app.post('/mark-completed', async (req, res) => {
