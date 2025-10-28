@@ -6,7 +6,7 @@
     <title>Public Dashboard - Citizen Reporter</title>
 
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display.swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -31,9 +31,9 @@
                     <li class="nav-item">
                         <a class="nav-link active" href="/dashboard">View All Reports</a>
                     </li>
-                    <!-- ADD THIS LINK BACK -->
+                    <!-- --- UPDATED LINK --- -->
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Check Status</a>
+                        <a class="nav-link" href="/?view=status">Check Status</a>
                     </li>
                 </ul>
             </div>
@@ -43,7 +43,6 @@
     <!-- =========== MAIN CONTENT =========== -->
     <div class="container">
         
-        <!-- --- Page Title --- -->
         <h1 class="text-light text-center my-4" style="font-weight: 700;">Public Reports Dashboard</h1>
 
         <!-- --- Sorting Controls --- -->
@@ -54,7 +53,8 @@
                 </div>
                 <div class="col-md-9">
                     <select id="sort-by" class="form-select form-control-dark">
-                        <option value="priority">Priority (Highest First)</option>
+                        <option value="priority">Priority (Oldest First)</option>
+                        <option value="votes">Most Voted</option>
                         <option value="status">Status</option>
                         <option value="ministry">Ministry / Dept.</option>
                         <option value="type">Problem Type</option>
@@ -63,32 +63,33 @@
             </div>
         </div>
 
-        <!-- --- Report List (Table View) --- -->
-        <div id="report-table-container" style="display: none;">
-            <table class="table table-dark table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th scope="col">Priority</th>
-                        <th scope="col">Status</th>
-                        <th scope="col">Votes</th>
-                        <th scope="col">Problem Type</th>
-                        <th scope="col">Ministry/Dept</th>
-                        <th scope="col">Description</th>
-                        <th scope="col">Filed On</th>
-                    </tr>
-                </thead>
-                <tbody id="report-table-body">
-                    <!-- Rows will be injected here -->
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Loading Spinner -->
-        <div id="loading-spinner" class="text-center text-light mt-5">
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">Loading...</span>
+        <!-- --- Report List --- -->
+        <div id="report-list-container" class="pb-5">
+            <!-- Loading Spinner -->
+            <div id="loading-spinner" class="text-center text-light mt-5">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Fetching all reports...</p>
             </div>
-            <p class="mt-2">Fetching all reports...</p>
+            
+            <!-- Table will be injected here -->
+            <div class="table-responsive">
+                <table class="table table-dark-custom align-middle">
+                    <thead>
+                        <tr>
+                            <th scope="col">Priority</th>
+                            <th scope="col">Report</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Votes</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-list-body">
+                        <!-- Report rows will be injected here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
         </div>
 
     </div>
@@ -99,17 +100,16 @@
     <!-- =========== OUR APP JAVASCRIPT =========== -->
     <script>
         let allReports = []; // Master list of reports
-        const reportTableBody = document.getElementById('report-table-body');
-        const reportTableContainer = document.getElementById('report-table-container');
+        const reportListBody = document.getElementById('report-list-body');
         const sortDropdown = document.getElementById('sort-by');
         const loadingSpinner = document.getElementById('loading-spinner');
-        const VOTED_KEY = 'voted-reports'; // localStorage key
 
         // --- 1. Fetch data when page loads ---
         document.addEventListener('DOMContentLoaded', () => {
             fetchReports();
             sortDropdown.addEventListener('change', renderReports);
-            reportTableBody.addEventListener('click', handleVoteClick);
+            // Add click listener to the table body for event delegation
+            reportListBody.addEventListener('click', handleVoteClick);
         });
 
         async function fetchReports() {
@@ -121,8 +121,9 @@
                 
                 // Process reports: calculate priority
                 allReports = reports.map(report => {
-                    const priority = calculatePriority(report);
-                    return { ...report, priority, dateObject: new Date(report.timestamp) };
+                    const priority = calculatePriority(report.timestamp);
+                    const dateObject = new Date(report.timestamp);
+                    return { ...report, priority, dateObject };
                 });
 
                 renderReports();
@@ -133,53 +134,55 @@
             }
         }
 
-        // --- 2. Calculate Priority (Dynamic) ---
-        function calculatePriority(report) {
-            const reportDate = new Date(report.timestamp);
+        // --- 2. Calculate Priority (with hour/minute logic) ---
+        function calculatePriority(isoTimestamp) {
+            const reportDate = new Date(isoTimestamp);
             const now = new Date();
-            const diffTime = Math.abs(now - reportDate);
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-            
-            // Priority is 1 point per day + votes
-            const votes = report.votes || 0;
-            const priorityScore = (report.status === 'Completed') ? -1 : diffDays + votes;
+            const diffMs = now - reportDate; // Difference in milliseconds
+
+            const diffMins = Math.floor(diffMs / (1000 * 60));
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)); // Use floor
 
             let level = 'Low';
             let badgeClass = 'bg-secondary-subtle text-secondary-emphasis';
+            let text = `${diffDays} days old`;
 
-            // Determine priority level
-            if (priorityScore > 20) {
+            if (diffDays > 14) {
                 level = 'High';
                 badgeClass = 'bg-danger-subtle text-danger-emphasis';
-            } else if (priorityScore > 7) {
+            } else if (diffDays > 7) {
                 level = 'Medium';
                 badgeClass = 'bg-warning-subtle text-warning-emphasis';
             }
-            
-            if (report.status === 'Completed') {
-                level = 'Done';
-                badgeClass = 'bg-success-subtle text-success-emphasis';
+
+            // Granular text for new reports
+            if (diffDays < 1) {
+                if (diffHours < 1) {
+                    text = `${diffMins} mins old`;
+                } else {
+                    text = `${diffHours} hours old`;
+                }
             }
 
-            return { score: priorityScore, text: `${level} (${priorityScore} Pts)`, badgeClass };
+            return { value: diffMs, level, badgeClass, text }; // Use milliseconds for sorting
         }
 
-        // --- 3. Render and Sort Reports (UPDATED) ---
+        // --- 3. Render and Sort Reports ---
         function renderReports() {
-            loadingSpinner.style.display = 'none'; // Hide loading spinner
-            reportTableContainer.style.display = 'block'; // Show the table
-            reportTableBody.innerHTML = ''; // Clear the table body
+            loadingSpinner.style.display = 'none'; 
+            reportListBody.innerHTML = ''; // Clear the table body
 
             const sortBy = sortDropdown.value;
-            const votedReports = JSON.parse(localStorage.getItem(VOTED_KEY)) || [];
-
             let reportsToRender = [...allReports];
 
             // Sort the array
             switch (sortBy) {
                 case 'priority':
-                    // Sort by priority score (Highest first)
-                    reportsToRender.sort((a, b) => b.priority.score - a.priority.score); 
+                    reportsToRender.sort((a, b) => b.priority.value - a.priority.value); // Highest ms (oldest) first
+                    break;
+                case 'votes':
+                    reportsToRender.sort((a, b) => b.votes - a.votes); // Highest votes first
                     break;
                 case 'status':
                     reportsToRender.sort((a, b) => a.status.localeCompare(b.status));
@@ -193,90 +196,81 @@
             }
 
             if (reportsToRender.length === 0) {
-                reportTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-light">No reports found.</td></tr>`;
+                reportListBody.innerHTML = `<tr><td colspan="5" class="text-center text-light">No reports found.</td></tr>`;
                 return;
             }
 
             // Generate HTML for each report row
             reportsToRender.forEach(report => {
-                const truncatedDesc = report.description.length > 50 
-                    ? report.description.substring(0, 50) + '...' 
-                    : report.description;
+                const statusBadge = report.status === 'Completed' 
+                    ? 'bg-success' : 'bg-primary';
                 
-                const hasVoted = votedReports.includes(report.id);
-                const isDisabled = hasVoted || report.status === 'Completed';
-                
-                const voteButton = `
-                    <button class="btn btn-vote btn-sm" data-id="${report.id}" ${isDisabled ? 'disabled' : ''}>
-                        ${hasVoted ? 'Voted' : 'Vote'}
-                    </button>
-                `;
-
-                const reportRow = `
+                const row = `
                     <tr>
                         <td>
                             <span class="badge ${report.priority.badgeClass} rounded-pill">
-                                ${report.priority.text}
+                                ${report.priority.level} (${report.priority.text})
                             </span>
                         </td>
                         <td>
-                            <span class="badge ${report.status === 'Completed' ? 'bg-success-subtle text-success-emphasis' : 'bg-primary-subtle text-primary-emphasis'} rounded-pill">
-                                ${report.status}
-                            </span>
+                            <strong class="text-light">${report.problemType}</strong>
+                            <small class="d-block text-light-emphasis">
+                                Dept: ${report.institution} | Filed: ${report.dateObject.toLocaleString()}
+                            </small>
                         </td>
                         <td>
-                            <span class="vote-count">${report.votes || 0}</span> ${voteButton}
+                            <span class="badge ${statusBadge} rounded-pill">${report.status}</span>
                         </td>
-                        <td>${report.problemType}</td>
-                        <td>${report.institution}</td>
-                        <td title="${report.description}">${truncatedDesc}</td>
-                        <td>${report.dateObject.toLocaleString()}</td>
+                        <td>
+                            <strong class="text-light" id="votes-${report.id}">${report.votes}</strong>
+                        </td>
+                        <td>
+                            <button class="btn btn-vote btn-sm" data-id="${report.id}" ${report.status === 'Completed' ? 'disabled' : ''}>
+                                Vote
+                            </button>
+                        </td>
                     </tr>
                 `;
-                reportTableBody.innerHTML += reportRow;
+                reportListBody.innerHTML += row;
             });
         }
 
-        // --- 4. Handle Voting ---
-        function handleVoteClick(e) {
-            if (e.target.classList.contains('btn-vote')) {
-                const button = e.target;
-                const id = button.dataset.id;
-                voteOnReport(id, button);
+        // --- 4. Handle Vote Click ---
+        async function handleVoteClick(e) {
+            // Check if the clicked element is a vote button
+            if (!e.target.classList.contains('btn-vote')) {
+                return;
             }
-        }
 
-        async function voteOnReport(id, button) {
+            const button = e.target;
+            const reportId = button.dataset.id;
+            
             button.disabled = true;
-            button.innerHTML = '...';
+            button.textContent = '...';
 
             try {
-                const response = await fetch(`/vote/${id}`, { method: 'POST' });
+                const response = await fetch(`/vote/${reportId}`, { method: 'POST' });
                 if (!response.ok) throw new Error('Vote failed');
+
+                // Update the vote count on the page
+                const voteCountElement = document.getElementById(`votes-${reportId}`);
+                let currentVotes = parseInt(voteCountElement.textContent);
+                voteCountElement.textContent = currentVotes + 1;
                 
-                // Add to local storage
-                const votedReports = JSON.parse(localStorage.getItem(VOTED_KEY)) || [];
-                votedReports.push(id);
-                localStorage.setItem(VOTED_KEY, JSON.stringify(votedReports));
-
-                // Update the master list
-                const reportIndex = allReports.findIndex(r => r.id === id);
-                if (reportIndex > -1) {
-                    allReports[reportIndex].votes = (allReports[reportIndex].votes || 0) + 1;
-                    // Recalculate priority
-                    allReports[reportIndex].priority = calculatePriority(allReports[reportIndex]);
-                }
-
-                // Re-render the whole table with new priority & vote count
-                renderReports();
+                button.textContent = 'Voted!';
+                
+                // Update the master array
+                const reportInArray = allReports.find(r => r.id === reportId);
+                if (reportInArray) reportInArray.votes++;
 
             } catch (error) {
-                console.error(error);
-                button.innerHTML = 'Error';
-                // Don't re-enable, to prevent spamming a failed request
+                console.error('Vote error:', error);
+                button.disabled = false;
+                button.textContent = 'Vote';
             }
         }
 
     </script>
 </body>
 </html>
+
