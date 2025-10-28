@@ -242,7 +242,18 @@ app.post('/check-golden-key', async (req, res) => {
         res.status(500).json({ message: "An error occurred." });
     }
 });
-
+// 4. Handle Mark as Completed
+app.post('/mark-completed', async (req, res) => {
+    try {
+        const { code } = req.body;
+        const reportRef = db.collection('reports').doc(code);
+        await reportRef.update({ status: 'Completed' });
+        res.json({ success: true, message: 'Report marked as completed.' });
+    } catch (error) {
+        console.error("Error marking completed:", error);
+        res.status(500).json({ success: false, message: 'An error occurred.' });
+    }
+});
 // 6. GOLDEN KEY ACTIONS (STEP 5)
 async function goldenKeyAuth(req, res, next) {
     if (!db) return res.status(500).json({ success: false, message: 'Database not connected.' });
