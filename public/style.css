@@ -14,12 +14,16 @@ body {
     font-weight: 600;
 }
 
+/* --- THIS IS THE FIX --- */
 .card.card-dark-bg {
     background-color: #2c3036;
     border: 1px solid #444;
     border-radius: 12px;
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    color: #e0e0e0; /* This ensures all text inside is light */
 }
+/* --- END FIX --- */
+
 
 .form-control-dark {
     background-color: #1e2125;
@@ -177,7 +181,7 @@ body {
     background-color: #2c3036; /* Override Bootstrap dark table */
 }
 
-/* --- VOTE BUTTON STYLE (FIXED) --- */
+/* --- VOTE BUTTON STYLE --- */
 .btn-vote {
     background-image: linear-gradient(to right, #007bff 0%, #0056b3 100%);
     border: none;
